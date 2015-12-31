@@ -145,17 +145,17 @@ def parseSecureRemoval( byteStr ):
         # HBarray.append(ord(byteStr[21])) # 9 Flags
         HBarray.append(0) # 9 Flags
 	        
-    #HBarray.append(99) # 10 key
-    #HBarray.append(ord(byteStr[16])) # 8 Status
-    #HBarray.append(ord(byteStr[17])) # 8 Status
-    #HBarray.append(ord(byteStr[18])) # 8 Status
-    #HBarray.append(ord(byteStr[19])) # 8 Status
-    #HBarray.append(ord(byteStr[20])) # 8 Status
-    #HBarray.append(ord(byteStr[21])) # 8 Status
-    #HBarray.append(ord(byteStr[22])) # 8 Status
+    HBarray.append(99) # 10 key
+    HBarray.append(ord(byteStr[16])) # 8 Status
+    HBarray.append(ord(byteStr[17])) # 8 Status
+    HBarray.append(ord(byteStr[18])) # 8 Status
+    HBarray.append(ord(byteStr[19])) # 8 Status
+    HBarray.append(ord(byteStr[20])) # 8 Status
+    HBarray.append(ord(byteStr[21])) # 8 Status
+    HBarray.append(ord(byteStr[22])) # 8 Status
     print "Secure "
     print HBarray[7]
-    # 10 Sub station name, added later
+    # 10 Sub station name
 
     return HBarray
 
@@ -265,10 +265,10 @@ def updateSecureRemIntoDb( dataAry, dbcursor ):
                          (dataAry[7], mydt(dataAry[6]), dataAry[0], dataAry[5]))
         # also insert as an event, ID stored into Flags
         dbcursor.execute("INSERT INTO eventlog (TransNum, System, EventType, EventStart, "
-                         "Source, Status, Flags, ReceiverID, SubStationName) "
-                         " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                         "Source, Status, Flags, ReceiverID) "
+                         " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                          (dataAry[5], dataAry[0], dataAry[8], mydt(dataAry[6]),
-                          dataAry[3], dataAry[8], dataAry[7], dataAry[7], dataAry[10]))
+                          dataAry[3], dataAry[8], dataAry[7], dataAry[7]))
 
         
     except:
@@ -525,20 +525,17 @@ def main():
                     # secure removal message
                     print "SR ",
                     sr = parseSecureRemoval(mypack)
-                    if ( (sr[0]==9) and (sr[7] <= 1000) ):
-                            print "Ignore sys 9 "
-                    else:
-                            for a in sr:
-                                    print "%d " % a,
-                            print
-                            writePacketToLog(sr[0], sr)
-                            if (dbOpened == False):
-                                    cursor = openDbConnection(db)
-                                    dbOpened = True    
-                            sr.append(getStationName(sr[0], sr[3], cursor))
-                            updateSecureRemIntoDb(sr, cursor)
-                            dbCloseTime = datetime.datetime.now() + dbCloseDelta
-                            #cursor.close()
+                    for a in sr:
+                            print "%d " % a,
+                    print
+                    writePacketToLog(sr[0], sr)
+                    if (dbOpened == False):
+                            cursor = openDbConnection(db)
+                            dbOpened = True    
+                    sr.append(getStationName(sr[0], sr[3], cursor))
+                    updateSecureRemIntoDb(sr, cursor)
+                    dbCloseTime = datetime.datetime.now() + dbCloseDelta
+                    #cursor.close()
             elif (mypack[2]=="w"):
                     # standard card scan
                     print "SC ",
@@ -558,20 +555,18 @@ def main():
                     # event message
                     print "EV ",
                     ev = parseTransaction(mypack)
-                    if (ev[5]<1000000000):
-                            for a in ev:
-                                    print "%d " % a,
-                            print
-                            writePacketToLog(ev[0], ev)
-                            if (dbOpened == False):
-                                    cursor = openDbConnection(db)
-                                    dbOpened = True    
-                            getEventStationNames(ev, cursor)
-                            insertTransactionIntoDb(ev ,cursor)
-                            dbCloseTime = datetime.datetime.now() + dbCloseDelta
-                            #cursor.close()
-                    else:
-                            print "dropped bad data"
+                    for a in ev:
+                            print "%d " % a,
+                    print
+                    writePacketToLog(ev[0], ev)
+                    if (dbOpened == False):
+                            cursor = openDbConnection(db)
+                            dbOpened = True    
+                    getEventStationNames(ev, cursor)
+                    insertTransactionIntoDb(ev ,cursor)
+                    dbCloseTime = datetime.datetime.now() + dbCloseDelta
+                    #cursor.close()
+
             # check if database should be closed            
             if (dbOpened and (datetime.datetime.now() > dbCloseTime)):
                     writeLastContIntoDb(lastCont, lastTouched, cursor)
